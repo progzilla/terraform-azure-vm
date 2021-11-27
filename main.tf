@@ -1,11 +1,17 @@
 # Terraform config block
 terraform {
-    required_providers {
-      azurerm = {
-          source = "hashicorp/azurerm"
-          version = "2.86.0"
-      }
-    } 
+  required_providers {
+    azurerm = {
+        source = "hashicorp/azurerm"
+        version = "2.86.0"
+    }
+  } 
+  backend "azurerm" {
+    resource_group_name   = "rg-terraformstate"
+    storage_account_name  = "terrastateazstorage2021"
+    container_name        = "terraformdemo"
+    key                   = "dev.terraform.tfstate"
+  }
 }
 
 #provider config block
@@ -64,7 +70,7 @@ resource "azurerm_network_interface" "nic" {
     }  
 }
 
-#create virtual machine 
+# create virtual machine 
 resource "azurerm_windows_virtual_machine" "vm" {
     name = "terraform-vm"
     location = azurerm_resource_group.rg.location
@@ -77,15 +83,28 @@ resource "azurerm_windows_virtual_machine" "vm" {
         azurerm_network_interface.nic.id 
     ]
 
+    # Operating System disk
     os_disk {
       caching               = "ReadWrite"
       storage_account_type  = "Standard_LRS"
     }
 
+    # Operatng system image
     source_image_reference {
       publisher = "MicrosoftWindowsServer"
       offer     = "WindowsServer"
       sku       = "2016-Datacenter"
       version   = "latest" 
     }
+}
+# output resource group name
+output "rg_name" {
+  description = "resource group"
+  value       = azurerm_resource_group.rg.name 
+}
+
+# output virtual network name
+output "vnet_name" {
+  description  = "virtual network"
+  value           = azurerm_virtual_network.vnet.name   
 }
