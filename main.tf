@@ -9,7 +9,7 @@ terraform {
   # create azure remote state 
   backend "azurerm" {
     resource_group_name   = "rg-terraformstate"
-    storage_account_name  = "terrastateazstorage2021"
+    storage_account_name  = "terrastatestorage2022"
     container_name        = "terraformdemo"
     key                   = "dev.terraform.tfstate"
   }
@@ -22,7 +22,7 @@ provider "azurerm" {
 
 # create resource group
 resource "azurerm_resource_group" "rg" {
-    name = "rg-terrademo"
+    name = "rg-${var.application}"
     location = var.location
     tags = {
       "env" = "terradev"
@@ -31,10 +31,10 @@ resource "azurerm_resource_group" "rg" {
 
 # create virtual network
 resource "azurerm_virtual_network" "vnet" {
-    name = "vnet-terranet-dev-001"
-    location = var.location
+    name = "vnet-${var.application}-${azurerm_resource_group.rg.location}-001"
+    location = azurerm_resource_group.rg.location
     resource_group_name = azurerm_resource_group.rg.name
-    address_space = [ "10.0.0.0/16" ]
+    address_space = var.vnet_address_space
 
     # subnet {
     #   name = "terrasubnet1"
@@ -52,33 +52,45 @@ resource "azurerm_virtual_network" "vnet" {
 
 # create subnet
 resource "azurerm_subnet" "subnet" {
-  name                = "terrasubnet"
-  address_prefixes    = [ "10.0.1.0/24" ]
+  name                = "snet-${var.application}-${azurerm_resource_group.rg.location}-001"
+  address_prefixes    = var.snet_address_space
   resource_group_name = azurerm_resource_group.rg.name
   virtual_network_name = azurerm_virtual_network.vnet.name
 }
 
 # create network interface
 resource "azurerm_network_interface" "nic" {
-    name                = "nic-01-terravm-dev-001"
-    location            = var.location
+    name                = "nic-${var.application}-001"
+    location            = azurerm_resource_group.rg.location
     resource_group_name = azurerm_resource_group.rg.name
 
     ip_configuration {
-      name                          = "niccfg-vmterraform"
+      name                          = "niccfg-${var.application}-ip"
       subnet_id                     = azurerm_subnet.subnet.id
       private_ip_address_allocation = "Dynamic"
+      public_ip_address_id          = azurerm_public_ip.pip.id
     }  
+}
+
+resource "azurerm_public_ip" "pip" {
+  name = "pip-${var.application}-001"
+  resource_group_name = azurerm_resource_group.rg.name
+  location = azurerm_resource_group.rg.location
+  allocation_method = "Dynamic"
+
+  tags = {
+    env = "Development"
+  }  
 }
 
 # create virtual machine 
 resource "azurerm_windows_virtual_machine" "vm" {
-    name = "terraform-vm"
+    name = "${var.application}-vm"
     location = azurerm_resource_group.rg.location
     resource_group_name = azurerm_resource_group.rg.name
-    size = "Standard_B1s"
-    admin_username = "terraadmin"
-    admin_password = var.password
+    size = var.vm_size
+    admin_username = var.admin_username
+    admin_password = var.admin_password
 
     network_interface_ids = [ 
         azurerm_network_interface.nic.id 
@@ -108,4 +120,9 @@ output "rg_name" {
 output "vnet_name" {
   description  = "virtual network"
   value           = azurerm_virtual_network.vnet.name   
+}
+
+output "pip" {
+  description     = "Public IP address"
+  value           = azurerm_public_ip.pip.ip_address
 }
