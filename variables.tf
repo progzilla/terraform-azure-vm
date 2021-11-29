@@ -9,10 +9,15 @@ variable "location" {
     default         = "uksouth"
 }
 
-variable "password" {
+variable "admin_username" {
+    type        = string
+    description = "local user admin"
+}
+
+variable "admin_password" {
     type            = string
-    default         = "local password"
-    sensensitive    = true  
+    description     = "local password"
+    sensitive       = true  
 }
 
 variable "vnet_address_space" {
@@ -36,6 +41,10 @@ variable "storage_account_type" {
     }
 }
 
+variable "vm_size" {
+    type        = string
+    description = "The size of VM"
+}
 variable "os" {
     description     = "OS image to deploy"
     type            = object({
