@@ -8,9 +8,9 @@ terraform {
   } 
   # create azure remote state 
   backend "azurerm" {
-    resource_group_name   = "rg-terraformstate"
-    storage_account_name  = "terrastatestorage2022"
-    container_name        = "terraformdemo"
+    resource_group_name   = "rg-terrastate"
+    storage_account_name  = "terrastatestorage032022"
+    container_name        = "terrademo"
     key                   = "dev.terraform.tfstate"
   }
 }
